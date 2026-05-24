@@ -192,8 +192,8 @@
             border-radius: 20px; padding: 20px; text-align: center; display: flex;
             flex-direction: column; align-items: center; justify-content: center; min-height: 120px; gap: 12px;
         }
-        .player-question-image { max-width: 100%; max-height: 140px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border-color); }
-        .player-opt-image { max-width: 100%; max-height: 100px; object-fit: contain; border-radius: 8px; }
+        .player-question-image { max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border-color); }
+        .player-opt-image { max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; }
         .player-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
         @media (max-width: 600px) { .player-options-grid { grid-template-columns: 1fr; } }
         
@@ -592,11 +592,26 @@
     function processFile(file, target) {
         const r = new FileReader();
         r.onload = e => {
-            const q = quizzes[currentQuizIndex];
-            if (target === 'q') q.imageData = e.target.result;
-            else if (target === 'opt1') q.imageDataOpt1 = e.target.result;
-            else if (target === 'opt2') q.imageDataOpt2 = e.target.result;
-            refreshPreviews(q);
+            const original = new Image();
+            original.onload = () => {
+                // 最大1200pxにリサイズ、JPEG品質0.75で圧縮
+                const MAX = 1200;
+                let w = original.width, h = original.height;
+                if (w > MAX || h > MAX) {
+                    if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+                    else { w = Math.round(w * MAX / h); h = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(original, 0, 0, w, h);
+                const compressed = canvas.toDataURL('image/jpeg', 0.75);
+                const q = quizzes[currentQuizIndex];
+                if (target === 'q') q.imageData = compressed;
+                else if (target === 'opt1') q.imageDataOpt1 = compressed;
+                else if (target === 'opt2') q.imageDataOpt2 = compressed;
+                refreshPreviews(q);
+            };
+            original.src = e.target.result;
         };
         r.readAsDataURL(file);
     }
